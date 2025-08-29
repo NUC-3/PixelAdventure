@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2D Jump and Run Abenteuer V19</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #0c0c1e;
+        }
+        body {
+            margin: 0; padding: 0; display: flex; justify-content: center; align-items: center;
+            color: white;
+            font-family: 'Press Start 2P', cursive; image-rendering: pixelated;
+        }
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: none;
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: #fff;
+            text-shadow: 2px 2px #000;
+        }
+        #top-right-hud {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            font-size: 16px;
+        }
+        #lives-hearts {
+            font-size: 24px;
+            margin-top: 5px;
+        }
+        #ammo-display {
+            font-size: 18px;
+        }
+        .menu, #shop {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); width: 90%; max-width: 500px;
+            background: rgba(40, 45, 60, 0.95); border: 4px solid #3c4c7c;
+            padding: 20px; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5); z-index: 10;
+            box-sizing: border-box;
+        }
+        .menu h2, #shop h2 {
+            margin-top: 0; color: #fff; font-size: 24px; text-shadow: 2px 2px #000;
+        }
+        .shop-item {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; padding: 10px; margin: 5px 0; background: #1a1a2a; font-size: 12px;
+        }
+        .menu button, .shop-item button, #homeButton {
+            background: #6b95ff; border: 2px solid #3c4c7c; color: #fff;
+            padding: 12px 20px; cursor: pointer; font-family: 'Press Start 2P', cursive;
+            text-shadow: 2px 2px #000;
+            font-weight: bold; transition: all 0.2s; margin-top: 10px;
+        }
+        .menu button:hover, .shop-item button:hover, #homeButton:hover {
+            background: #8bb5ff;
+        }
+        .shop-item button:disabled {
+            background: #555; cursor: not-allowed; color: #888;
+        }
+        #mainMenu { 
+            display: flex; 
+            background: linear-gradient(145deg, #1a1a2e, #2c2c4e);
+            border-image: linear-gradient(to bottom right, #6b95ff, #3c4c7c) 1;
+        }
+        #mainMenu h2 {
+            font-size: 36px;
+            color: #ffd700;
+            text-shadow: 3px 3px #000;
+        }
+        #instructionsScreen, #achievementsScreen, #settingsScreen { display: none; text-align: center; font-size: 14px; line-height: 1.8; }
+        
+        #toolWheel {
+            position: absolute; top: 50%; left: 50%;
+            width: 250px; height: 250px;
+            transform: translate(-50%, -50%); border-radius: 50%;
+            display: none; z-index: 20;
+        }
+        .tool-slot {
+            position: absolute; width: 80px; height: 80px;
+            background-color: rgba(60, 76, 124, 0.7); border: 2px solid #fff;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 10px; text-align: center; transition: all 0.2s;
+        }
+        .tool-slot.selected {
+            background-color: rgba(139, 181, 255, 0.8); transform: scale(1.1);
+        }
+        #achievement-notification {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ffd700;
+            color: black;
+            padding: 10px 20px;
+            text-shadow: none;
+            font-size: 12px;
+            border: 2px solid black;
+            z-index: 30;
+            transition: all 0.5s ease-in-out;
+            text-align: center;
+        }
+        #homeButton {
+            position: absolute;
+            bottom: 170px;
+            right: 20px;
+            padding: 8px 12px;
+            font-size: 12px;
+            z-index: 30;
+        }
+        #shop { display: none; z-index: 15;}
+        #shop-tabs { display: flex; width: 100%; margin-bottom: 10px; }
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            background: #3c4c7c;
+            border: 2px solid #1a1a2a;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background: #6b95ff;
+        }
+        #achievements-list {
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 12px;
+        }
+        .achievement-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #1a1a2a;
+        }
+        .achievement-item.unlocked {
+            color: #ffd700;
+            border-left: 3px solid #ffd700;
+        }
+        .achievement-item.locked {
+            color: #888;
+        }
+        .achievement-item h3 { margin: 0 0 5px 0; font-size: 14px; }
+        .achievement-item p { margin: 0; font-size: 10px; }
+        .achievement-reward { font-size: 10px; color: #8bb5ff; margin-top: 5px; }
+        #powerup-display {
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            text-shadow: 2px 2px #000;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .powerup-text {
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        /* --- Mobile Steuerung --- */
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            display: none; /* Standardmäßig ausblenden */
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+            z-index: 25;
+        }
+        #joystick-container {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            pointer-events: auto;
+        }
+        #joystick {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        #joystick-knob {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #action-buttons {
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+        }
+        .action-button {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid white;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            text-align: center;
+        }
+        .action-button:active {
+             background: rgba(255, 255, 255, 0.5);
+        }
+        #shopBackButton {
+            display: none;
+        }
+        .button-size-controls, .device-controls {
+            margin-top: 15px;
+        }
+        .button-size-controls button, .device-controls button {
+            font-size: 10px;
+            padding: 8px 12px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud">
+            <div id="top-right-hud">
+                <span id="tool"></span>
+                <span id="money"></span>
+                <div id="ammo-display"></div>
+                <div id="lives-hearts"></div>
+            </div>
+             <div id="powerup-display"></div>
+        </div>
+        <div id="achievement-notification"></div>
+        <button id="homeButton">Home</button>
+        <div id="mobileControls">
+            <div id="joystick-container">
+                <div id="joystick">
+                    <div id="joystick-knob"></div>
+                </div>
+            </div>
+            <div id="action-buttons">
+                <button id="switchButton" class="action-button">SWITCH</button>
+                <button id="jumpButton" class="action-button">JUMP</button>
+                <button id="shootButton" class="action-button">SHOOT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainMenu" class="menu">
+        <h2>Pixel Adventure</h2>
+        <p id="achievement-progress" style="font-size: 14px; margin-top: 20px;"></p>
+        <button id="startButton">Spiel starten</button>
+        <button id="shopButtonMenu">Shop</button>
+        <button id="instructionsButton">Anleitung</button>
+        <button id="achievementsButton">Erfolge</button>
+        <button id="settingsButton">Einstellungen</button>
+    </div>
+    <div id="instructionsScreen" class="menu">
+        <h2>Anleitung</h2>
+        <p>A/D: Bewegen</p>
+        <p>W/Space: Springen/Klettern</p>
+        <p>Linksklick: Benutzen</p>
+        <p>R: Nachladen</p>
+        <p>Q (halten): Werkzeugrad</p>
+        <p>E: Shop oeffnen</p>
+        <button id="backButton">Zurueck</button>
+    </div>
+    <div id="achievementsScreen" class="menu">
+        <h2>Erfolge</h2>
+        <div id="achievements-list"></div>
+        <button id="achievementsBackButton">Zurueck</button>
+    </div>
+     <div id="settingsScreen" class="menu">
+        <h2>Einstellungen</h2>
+        <button id="mobileControlsButton">Mobile Steuerung: Aus</button>
+        <div class="button-size-controls">
+            <p style="font-size: 12px; margin-bottom: 10px;">Knopfgröße</p>
+            <button data-size="55">Klein</button>
+            <button data-size="65">Mittel</button>
+            <button data-size="75">Groß</button>
+        </div>
+        <div class="device-controls" style="margin-top: 15px;">
+            <p style="font-size: 12px; margin-bottom: 10px;">Geräte-Simulation</p>
+            <button data-device="pc">PC (Vollbild)</button>
+            <button data-device="handy">Handy</button>
+            <button data-device="ipad">iPad</button>
+        </div>
+        <button id="settingsBackButton">Zurueck</button>
+    </div>
+    
+    <div id="shop">
+        <h2>Shop</h2>
+        <div id="shop-tabs">
+            <button id="waffen-tab-btn" class="tab-button active">Waffen</button>
+            <button id="munition-tab-btn" class="tab-button">Munition</button>
+        </div>
+        <div id="waffen-tab" class="shop-content" style="width:100%;">
+            <div class="shop-item"><span>Schrotflinte (600$)</span><button data-weapon="Schrotflinte" onclick="buyWeapon('Schrotflinte', this)">Kaufen</button></div>
+            <div class="shop-item"><span>Maschinengewehr (250$)</span><button data-weapon="Maschinengewehr" onclick="buyWeapon('Maschinengewehr', this)">Kaufen</button></div>
+            <div class="shop-item"><span>Raketenwerfer (500$)</span><button data-weapon="Raketenwerfer" onclick="buyWeapon('Raketenwerfer', this)">Kaufen</button></div>
+            <div class="shop-item"><span>Laser (750$)</span><button data-weapon="Laser" onclick="buyWeapon('Laser', this)">Kaufen</button></div>
+            <div class="shop-item"><span>Granatwerfer (600$)</span><button data-weapon="Granatwerfer" onclick="buyWeapon('Granatwerfer', this)">Kaufen</button></div>
+            <div class="shop-item"><span>Greifhaken (300$)</span><button data-weapon="Greifhaken" onclick="buyWeapon('Greifhaken', this)">Kaufen</button></div>
+        </div>
+        <div id="munition-tab" class="shop-content" style="display:none; width: 100%;">
+             <div class="shop-item"><span>Pistolen Muni x100 (25$)</span><button data-weapon="Pistole" onclick="buyAmmo('Pistole', 100, 25)">Kaufen</button></div>
+             <div class="shop-item"><span>Schrot-Patronen x20 (75$)</span><button data-weapon="Schrotflinte" onclick="buyAmmo('Schrotflinte', 20, 75)">Kaufen</button></div>
+            <div class="shop-item"><span>MG Muni x100 (50$)</span><button data-weapon="Maschinengewehr" onclick="buyAmmo('Maschinengewehr', 100, 50)">Kaufen</button></div>
+            <div class="shop-item"><span>Raketen x10 (100$)</span><button data-weapon="Raketenwerfer" onclick="buyAmmo('Raketenwerfer', 10, 100)">Kaufen</button></div>
+            <div class="shop-item"><span>Laser Energie x50 (125$)</span><button data-weapon="Laser" onclick="buyAmmo('Laser', 50, 125)">Kaufen</button></div>
+            <div class="shop-item"><span>Granaten x5 (150$)</span><button data-weapon="Granatwerfer" onclick="buyAmmo('Granatwerfer', 5, 150)">Kaufen</button></div>
+        </div>
+        <button id="shopBackButton">Zurück</button>
+        <p style="margin-top: 20px; font-size: 12px;">Druecke 'E' zum Schliessen</p>
+    </div>
+
+    <div id="toolWheel"></div>
+    
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Spielzustand und Variablen ---
+        let gameState = 'menu';
+        let gameStateBeforeShop = 'menu';
+        let lives = 3;
+        let money = 0;
+        let tools = ['Pistole'];
+        let currentToolIndex = 0;
+        let lastUseTime = 0;
+        let cameraX = 0;
+        const gravity = 0.5;
+        let gameTime = 0;
+        let worldSeed = 0;
+        let screenShake = { duration: 0, intensity: 0 };
+
+        // --- Spieler ---
+        const player = {
+            x: 100, y: 400, width: 32, height: 48, dx: 0, dy: 0, speed: 4, jumpPower: 13,
+            onGround: false, wasOnGround: true, isClimbing: false, color: '#ff6347', direction: 1,
+            airTime: 0,
+            speedBoostTimer: 0,
+            invincibilityTimer: 0,
+            rapidFireTimer: 0,
+            magnetTimer: 0,
+        };
+
+        // --- Greifhaken ---
+        const grapple = {
+            active: false, x: 0, y: 0, targetX: 0, targetY: 0,
+            maxLength: 350, speed: 20, hooked: false, hookedTo: null
+        };
+
+        // --- Spielobjekte ---
+        let bullets = [];
+        let enemyBullets = [];
+        let enemies = [];
+        let platforms = [];
+        let particles = [];
+        let collectibles = [];
+        let backgroundStars = [];
+        let powerUpBlocks = [];
+        let activePowerUps = [];
+        let powerUpDisplayMessages = [];
+
+        // --- Steuerung ---
+        const keys = { a: false, d: false, w: false, r: false, q: false };
+        const mouse = { x: 0, y: 0, down: false };
+
+        // --- UI Elemente ---
+        const gameWrapper = document.getElementById('game-wrapper');
+        const livesHearts = document.getElementById('lives-hearts');
+        const toolDisplay = document.getElementById('tool');
+        const moneyDisplay = document.getElementById('money');
+        const ammoDisplay = document.getElementById('ammo-display');
+        const shopElement = document.getElementById('shop');
+        const mainMenu = document.getElementById('mainMenu');
+        const instructionsScreen = document.getElementById('instructionsScreen');
+        const achievementsScreen = document.getElementById('achievementsScreen');
+        const settingsScreen = document.getElementById('settingsScreen');
+        const achievementsList = document.getElementById('achievements-list');
+        const toolWheel = document.getElementById('toolWheel');
+        const achievementNotification = document.getElementById('achievement-notification');
+        const achievementProgress = document.getElementById('achievement-progress');
+        const homeButton = document.getElementById('homeButton');
+        const powerUpDisplay = document.getElementById('powerup-display');
+        
+        const startButton = document.getElementById('startButton');
+        const shopButtonMenu = document.getElementById('shopButtonMenu');
+        const instructionsButton = document.getElementById('instructionsButton');
+        const backButton = document.getElementById('backButton');
+        const achievementsButton = document.getElementById('achievementsButton');
+        const achievementsBackButton = document.getElementById('achievementsBackButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const mobileControlsButton = document.getElementById('mobileControlsButton');
+        const settingsBackButton = document.getElementById('settingsBackButton');
+        const mobileControls = document.getElementById('mobileControls');
+        const joystickContainer = document.getElementById('joystick-container');
+        const joystickKnob = document.getElementById('joystick-knob');
+        const jumpButton = document.getElementById('jumpButton');
+        const shootButton = document.getElementById('shootButton');
+        const switchButton = document.getElementById('switchButton');
+        const shopBackButton = document.getElementById('shopBackButton');
+        const deviceControls = document.querySelector('.device-controls');
+
+        let mobileControlsEnabled = false;
+
+        // --- Munition & Waffen-Daten ---
+        const weaponData = {
+            'Pistole': { fireRate: 200, speed: 15, radius: 4, type: 'normal', color: '#ffff00', clipSize: 12, reloadTime: 1000, price: 0 },
+            'Schrotflinte': { fireRate: 500, speed: 14, type: 'shotgun', color: '#a9a9a9', clipSize: 2, reloadTime: 2000, price: 600, pellets: 5 },
+            'Maschinengewehr': { fireRate: 100, speed: 20, radius: 3, type: 'normal', color: '#ffa500', clipSize: 30, reloadTime: 1500, price: 250 },
+            'Raketenwerfer': { fireRate: 1000, speed: 10, radius: 8, type: 'rocket', color: '#ff6347', clipSize: 1, reloadTime: 2000, price: 500 },
+            'Laser': { fireRate: 50, speed: 30, radius: 2, type: 'laser', color: '#f0f', clipSize: 50, reloadTime: 1800, price: 750 },
+            'Granatwerfer': { fireRate: 800, speed: 8, radius: 7, type: 'grenade', color: '#4CAF50', clipSize: 3, reloadTime: 2500, price: 600 },
+            'Greifhaken': { price: 300 }
+        };
+
+        const ammoShopData = [
+            { name: "Pistolen Muni", weapon: "Pistole", amount: 100, cost: 25 },
+            { name: "Schrot-Patronen", weapon: "Schrotflinte", amount: 20, cost: 75 },
+            { name: "MG Muni", weapon: "Maschinengewehr", amount: 100, cost: 50 },
+            { name: "Raketen", weapon: "Raketenwerfer", amount: 10, cost: 100 },
+            { name: "Laser Energie", weapon: "Laser", amount: 50, cost: 125 },
+            { name: "Granaten", weapon: "Granatwerfer", amount: 5, cost: 150 },
+        ];
+
+        let ammo = {};
+        let isReloading = false;
+
+        // --- Erfolge & Statistiken ---
+        let stats = {};
+        let achievements = [];
+        
+        function seededRandom() {
+            let x = Math.sin(worldSeed++) * 10000;
+            return x - Math.floor(x);
+        }
+
+        // ======== SPIELINITIALISIERUNG ========
+        function initializeGame() {
+            initAchievements(); 
+            initStats();
+            initAmmo();
+            updateAchievementProgress();
+            resizeCanvas();
+            gameLoop();
+        }
+
+        function resetGame() {
+            worldSeed = Math.random() * 10000;
+            
+            initStats(false); 
+            
+            backgroundStars = [];
+            for(let i = 0; i < 150; i++) {
+                backgroundStars.push({
+                    x: Math.random() * canvas.width * 3, y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.5, speed: Math.random() * 0.3 + 0.1
+                });
+            }
+
+            platforms = [{ x: -100, y: 550, width: 600, height: 50, type: 'normal' }];
+            powerUpBlocks = [];
+            activePowerUps = [];
+            platforms.forEach(p => generatePlatformDetails(p));
+            for (let i = 0; i < 20; i++) generatePlatform();
+            
+            enemies = [];
+            collectibles = [];
+            bullets = [];
+            enemyBullets = [];
+            spawnEnemy();
+            spawnEnemy();
+
+            player.x = 100; player.y = 400; player.dx = 0; player.dy = 0; player.direction = 1;
+            lives = 3;
+            
+            cameraX = 0;
+            updateHUD();
+        }
+
+        // ======== WELTGENERIERUNG ========
+        function generatePlatform() {
+            const lastPlatform = platforms[platforms.length - 1];
+            const newX = lastPlatform.x + lastPlatform.width + seededRandom() * 80 + 60;
+            const newY = Math.max(250, Math.min(550, lastPlatform.y + (seededRandom() - 0.5) * 120));
+            const newWidth = seededRandom() * 150 + 100;
+            
+            if (seededRandom() > 0.5) { 
+                const floatingY = newY - (80 + seededRandom() * 60);
+                const floatingX = newX + newWidth / 2;
+                const floatingWidth = seededRandom() * 80 + 50;
+                const floatingPlatform = { x: floatingX, y: floatingY, width: floatingWidth, height: 20, type: 'normal' };
+                generatePlatformDetails(floatingPlatform);
+                platforms.push(floatingPlatform);
+            }
+
+            if (seededRandom() > 0.9) {
+                const blockX = newX + seededRandom() * newWidth;
+                const blockY = newY - (60 + seededRandom() * 80);
+
+                let canSpawn = true;
+                for (const p of platforms) {
+                    if (p.type === 'wall' &&
+                        blockX < p.x + p.width &&
+                        blockX + 32 > p.x &&
+                        blockY < p.y + p.height &&
+                        blockY + 32 > p.y) {
+                        canSpawn = false;
+                        break;
+                    }
+                }
+
+                if (canSpawn) {
+                    const powerUpTypes = ['extraLife', 'speedBoost', 'invincibility', 'magnet', 'rapidFire', 'ammo'];
+                    const content = seededRandom() > 0.25 ? powerUpTypes[Math.floor(seededRandom() * powerUpTypes.length)] : 'money';
+                    powerUpBlocks.push({
+                        x: blockX,
+                        y: blockY,
+                        width: 32, height: 32,
+                        hit: false,
+                        content: content
+                    });
+                }
+            }
+
+            if (seededRandom() > 0.75) { 
+                const wallPlatform = { x: newX, y: newY - 300, width: 30, height: 300, type: 'wall' };
+                generatePlatformDetails(wallPlatform); 
+                platforms.push(wallPlatform);
+            } else {
+                if (seededRandom() > 0.9) {
+                    collectibles.push({x: newX + newWidth / 2, y: newY - 30, width: 25, height: 15, value: 50});
+                }
+            }
+
+            const newPlatform = { x: newX, y: newY, width: newWidth, height: 20, type: 'normal' };
+            generatePlatformDetails(newPlatform);
+            platforms.push(newPlatform);
+        }
+        
+        function generatePlatformDetails(platform) {
+            platform.details = [];
+            for (let i = 0; i < platform.width / 10; i++) {
+                if (seededRandom() > 0.5) {
+                    platform.details.push({
+                        x: seededRandom() * platform.width,
+                        y: seededRandom() * platform.height,
+                        color: platform.type === 'wall' ? `rgba(120,120,120,0.5)` : `rgba(0,0,0,0.2)`
+                    });
+                }
+                if (platform.type === 'normal' && seededRandom() > 0.9) {
+                    platform.details.push({
+                        x: seededRandom() * platform.width,
+                        y: 0,
+                        length: 10 + seededRandom() * 20,
+                        color: '#4a752c'
+                    });
+                }
+            }
+        }
+
+        function manageWorld() {
+            platforms = platforms.filter(p => p.x + p.width > cameraX - 100);
+            powerUpBlocks = powerUpBlocks.filter(b => b.x + b.width > cameraX - 100);
+            collectibles = collectibles.filter(c => c.x + c.width > cameraX - 100);
+            const lastPlatform = platforms[platforms.length - 1];
+            if (lastPlatform.x < cameraX + canvas.width + 200) generatePlatform();
+        }
+        
+        // ======== GEGNER ========
+        function spawnEnemy() {
+            const eligiblePlatforms = platforms.filter(p => p.x > cameraX + canvas.width && p.type === 'normal');
+            if (eligiblePlatforms.length > 0) {
+                const platform = eligiblePlatforms[Math.floor(seededRandom() * eligiblePlatforms.length)];
+                let enemyType = 'melee';
+                const rand = seededRandom();
+                if (rand > 0.7) {
+                    enemyType = 'flyer';
+                } else if (rand > 0.35) {
+                    enemyType = 'shooter';
+                }
+                
+                let color = '#c44e4e'; // Melee
+                if (enemyType === 'shooter') color = '#e5b000';
+                if (enemyType === 'flyer') color = '#9a70c4';
+
+                enemies.push({
+                    x: platform.x + platform.width / 2, y: platform.y - 32,
+                    width: 32, height: 32, speed: seededRandom() * 1 + 1,
+                    direction: 1, patrolRange: platform.width, startX: platform.x,
+                    type: enemyType,
+                    color: color,
+                    shootCooldown: 180 + seededRandom() * 120,
+                    startY: platform.y - 32 // For flyer
+                });
+            }
+        }
+
+        function updateEnemies() {
+            enemies.forEach(enemy => {
+                enemy.x += enemy.speed * enemy.direction;
+                
+                if (enemy.type === 'flyer') {
+                    enemy.y = enemy.startY + Math.sin(gameTime * 0.05 + enemy.x * 0.1) * 40;
+                }
+
+                if (enemy.x > enemy.startX + enemy.patrolRange - enemy.width || enemy.x < enemy.startX) {
+                    enemy.direction *= -1;
+                }
+
+                if (enemy.type === 'shooter') {
+                    enemy.shootCooldown--;
+                    const distToPlayer = Math.abs(player.x - enemy.x);
+                    if (enemy.shootCooldown <= 0 && distToPlayer < 400) {
+                        if ((player.x > enemy.x && enemy.direction === 1) || (player.x < enemy.x && enemy.direction === -1)) {
+                            enemyBullets.push({
+                                x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height / 2,
+                                dx: 5 * enemy.direction, dy: 0,
+                                radius: 5, color: '#ff5555'
+                            });
+                            enemy.shootCooldown = 180 + seededRandom() * 120;
+                        }
+                    }
+                }
+            });
+            enemies = enemies.filter(e => e.x + e.width > cameraX - 100);
+            if (enemies.length < 5 && seededRandom() < 0.01) spawnEnemy();
+        }
+
+        // ======== SPIEL-LOOP ========
+        function gameLoop() {
+            if (gameState === 'playing') {
+                update();
+            }
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ======== UPDATE-FUNKTION ========
+        function update() {
+            gameTime++;
+            stats.ticksSurvived++;
+
+            handleMovement();
+            handlePhysics();
+            handleClimbingAndJumping(); 
+            updatePowerUps();
+            updatePowerUpDisplay();
+            
+            if (player.onGround && !player.wasOnGround) {
+                if (player.airTime > 180) {
+                    unlockAchievement('freefall');
+                }
+                player.airTime = 0;
+                createParticleExplosion(player.x + player.width / 2, player.y + player.height, '#ccc', 5, 2);
+            } else if (!player.onGround) {
+                player.airTime++;
+            }
+            
+            if (player.isClimbing) {
+                stats.ticksClimbing++;
+            }
+            
+            if (tools[currentToolIndex] === 'Greifhaken') {
+                updateGrapple();
+            }
+            if (grapple.hooked) {
+                handleGrapplePhysics();
+            }
+            
+            cameraX = player.x - canvas.width / 3;
+            manageWorld();
+            updateEnemies();
+            updateBullets(bullets, true);
+            updateBullets(enemyBullets, false);
+            checkCollisions();
+            updateParticles();
+            checkAchievements();
+            if (player.y > canvas.height + 200) playerFell();
+
+            if (screenShake.duration > 0) {
+                screenShake.duration--;
+            }
+
+            if (mouse.down) {
+                useTool();
+            }
+        }
+
+        function handleMovement() {
+            player.dx = 0;
+            const currentSpeed = player.speedBoostTimer > 0 ? player.speed * 1.5 : player.speed;
+            if (keys.a) { player.dx = -currentSpeed; player.direction = -1; }
+            if (keys.d) { player.dx = currentSpeed; player.direction = 1; }
+            
+            if(player.dx !== 0) {
+                const distanceIncrement = Math.abs(player.dx);
+                stats.distanceTraveled += distanceIncrement;
+                stats.distanceWithoutDamage += distanceIncrement;
+                stats.distanceWithoutKills += distanceIncrement;
+            }
+        }
+
+        function handlePhysics() {
+            player.x += player.dx;
+            if (!grapple.hooked && !player.isClimbing) {
+                player.dy += gravity;
+            }
+            player.y += player.dy;
+            
+            player.wasOnGround = player.onGround;
+            player.onGround = false;
+
+            platforms.forEach(platform => {
+                if (player.x < platform.x + platform.width && player.x + player.width > platform.x &&
+                    player.y + player.height > platform.y && player.y < platform.y + platform.height) {
+                    if (platform.type !== 'wall') {
+                        if (player.dy > 0 && player.y + player.height - player.dy <= platform.y + 1) {
+                            player.y = platform.y - player.height;
+                            player.dy = 0;
+                            player.onGround = true;
+                        }
+                    } else {
+                        if (player.dx > 0 && player.x + player.width - player.dx <= platform.x) player.x = platform.x - player.width;
+                        if (player.dx < 0 && player.x - player.dx >= platform.x + platform.width) player.x = platform.x + platform.width;
+                    }
+                }
+            });
+
+            powerUpBlocks.forEach(block => {
+                if (player.dy < 0 && 
+                    player.x + player.width > block.x &&
+                    player.x < block.x + block.width &&
+                    player.y > block.y + block.height - 10 &&
+                    player.y < block.y + block.height) {
+                    
+                    player.y = block.y + block.height;
+                    player.dy = 0;
+                    hitPowerUpBlock(block);
+                }
+            });
+        }
+        
+        function handleClimbingAndJumping() {
+            player.isClimbing = false;
+            if (!player.onGround) {
+                for(let p of platforms) {
+                    if (p.type === 'wall' && 
+                        player.y + player.height > p.y && player.y < p.y + p.height &&
+                        ((player.direction === 1 && player.x + player.width >= p.x && player.x < p.x + 10) ||
+                         (player.direction === -1 && player.x <= p.x + p.width && player.x > p.x + p.width - 10)))
+                    {
+                        player.isClimbing = true;
+                        player.dy *= 0.8;
+                        break;
+                    }
+                }
+            }
+            if (keys.w) {
+                if (player.onGround) {
+                    player.dy = -player.jumpPower;
+                    stats.jumps++;
+                } else if (player.isClimbing) {
+                    player.dy = -player.jumpPower * 0.8;
+                    player.dx = -player.direction * player.speed;
+                    stats.jumps++;
+                }
+                keys.w = false;
+            }
+        }
+
+        // ======== ZEICHEN-FUNKTION ========
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+
+            ctx.save();
+            
+            if (screenShake.duration > 0) {
+                const shakeX = (Math.random() - 0.5) * screenShake.intensity;
+                const shakeY = (Math.random() - 0.5) * screenShake.intensity;
+                ctx.translate(shakeX, shakeY);
+            }
+
+            ctx.translate(-cameraX, 0);
+            
+            platforms.forEach(platform => drawPlatform(platform));
+            powerUpBlocks.forEach(block => drawPowerUpBlock(block));
+            activePowerUps.forEach(p => drawActivePowerUp(p));
+            
+            collectibles.forEach(c => {
+                const bob = Math.sin(gameTime * 0.1 + c.x) * 2;
+                ctx.fillStyle = '#2e8b57';
+                ctx.fillRect(c.x, c.y + bob, c.width, c.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '10px "Press Start 2P"';
+                ctx.fillText("$", c.x + 8, c.y + 11 + bob);
+            });
+
+            if (gameState === 'playing' || gameState === 'paused') {
+                drawPlayer();
+                if (tools[currentToolIndex] === 'Greifhaken') drawGrapple();
+                
+                enemies.forEach(enemy => {
+                    const bob = Math.sin(gameTime * 0.1 + enemy.x) * 2;
+                    ctx.fillStyle = enemy.color;
+                    ctx.fillRect(enemy.x, enemy.y + bob, enemy.width, enemy.height);
+                    ctx.fillStyle = 'white';
+                    const eyeX = enemy.direction > 0 ? enemy.x + enemy.width - 10 : enemy.x + 4;
+                    ctx.fillRect(eyeX, enemy.y + 8 + bob, 6, 6);
+                });
+                bullets.forEach(bullet => drawBullet(bullet));
+                enemyBullets.forEach(bullet => drawBullet(bullet));
+            }
+
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            ctx.globalAlpha = 1.0;
+            ctx.restore();
+        }
+
+        function drawBackground() {
+            ctx.fillStyle = '#0c0c1e';
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            backgroundStars.forEach(star => {
+                const x = (star.x - cameraX * star.speed) % (canvas.width * 3) - canvas.width;
+                ctx.beginPath();
+                ctx.arc(x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawPlatform(platform) {
+            const grass_color = '#5d945d';
+            const dirt_color = '#8b5e34';
+            const rock_color = '#5a5a5a';
+
+            if (platform.type === 'wall') {
+                ctx.fillStyle = rock_color;
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            } else {
+                ctx.fillStyle = grass_color;
+                ctx.fillRect(platform.x, platform.y, platform.width, 8);
+                ctx.fillStyle = dirt_color;
+                ctx.fillRect(platform.x, platform.y + 8, platform.width, platform.height - 8);
+            }
+            platform.details.forEach(d => {
+                ctx.fillStyle = d.color;
+                if (d.length) {
+                    ctx.fillRect(platform.x + d.x, platform.y + d.y, 2, d.length);
+                } else {
+                    ctx.fillRect(platform.x + d.x, platform.y + d.y, 2, 2);
+                }
+            });
+        }
+        
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+            ctx.scale(player.direction, 1);
+            const bob = player.onGround && player.dx !== 0 ? Math.sin(gameTime * 0.5) * 2 : 0;
+            
+            if (player.invincibilityTimer > 0 && gameTime % 10 < 5) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            ctx.fillStyle = player.color;
+            ctx.fillRect(-player.width / 2, -player.height / 2 + bob, player.width, player.height);
+            
+            ctx.fillStyle = '#ff8c69';
+            ctx.fillRect(-player.width/2 + 4, -player.height/2 - 8 + bob, player.width - 8, 12);
+            
+            const tool = tools[currentToolIndex];
+            if (tool !== 'Greifhaken') {
+                const weaponYOffset = -4 + bob;
+                if (tool === 'Pistole') {
+                    ctx.fillStyle = '#888'; ctx.fillRect(10, weaponYOffset, 16, 8);
+                } else if (tool === 'Schrotflinte') {
+                    ctx.fillStyle = '#784d2d'; ctx.fillRect(10, weaponYOffset - 2, 22, 10);
+                } else if (tool === 'Maschinengewehr') {
+                    ctx.fillStyle = '#444'; ctx.fillRect(10, weaponYOffset - 2, 24, 12);
+                } else if (tool === 'Raketenwerfer') {
+                    ctx.fillStyle = '#4a6741'; ctx.fillRect(5, weaponYOffset - 4, 28, 16);
+                } else if (tool === 'Laser') {
+                    ctx.fillStyle = '#800080'; ctx.fillRect(10, weaponYOffset + 2, 26, 4);
+                } else if (tool === 'Granatwerfer') {
+                    ctx.fillStyle = '#3e2723'; ctx.fillRect(8, weaponYOffset - 3, 22, 14);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawBullet(bullet) {
+            if (bullet.type === 'rocket') {
+                ctx.save();
+                ctx.translate(bullet.x, bullet.y);
+                ctx.rotate(Math.atan2(bullet.dy, bullet.dx));
+                ctx.fillStyle = bullet.color;
+                ctx.fillRect(-bullet.radius, -bullet.radius/2, bullet.radius * 2, bullet.radius);
+                ctx.fillStyle = 'orange';
+                ctx.fillRect(-bullet.radius - 5, -bullet.radius/2, 5, bullet.radius);
+                ctx.restore();
+                if (gameTime % 2 === 0) {
+                    particles.push({x: bullet.x, y: bullet.y, dx: 0, dy: 0, life: 0.5, size: bullet.radius * 0.8, color: '#ccc'});
+                }
+            } else {
+                ctx.fillStyle = bullet.color || '#ffff00';
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // ======== WERKZEUGE & MUNITION ========
+        function useTool() {
+            const toolName = tools[currentToolIndex];
+            const now = Date.now();
+            
+            if (toolName === 'Greifhaken') {
+                if (now - lastUseTime > 500) {
+                    if (grapple.active) releaseGrapple();
+                    else {
+                        fireGrapple(mouse.x + cameraX, mouse.y);
+                        stats.grappleUses++;
+                    }
+                    lastUseTime = now;
+                }
+                return;
+            }
+
+            let props = weaponData[toolName];
+            if (!props || isReloading) return;
+
+            if (ammo[toolName].clip <= 0) {
+                handleReload();
+                return;
+            }
+
+            const fireRate = player.rapidFireTimer > 0 ? props.fireRate / 2 : props.fireRate;
+            if (now - lastUseTime < fireRate) return;
+            
+            ammo[toolName].clip--;
+            stats.shotsFired++;
+            stats.shotsPerWeapon[toolName]++;
+            
+            const bulletStartX = player.x + player.width / 2 + (25 * player.direction);
+            const bulletStartY = player.y + player.height / 2 - 5;
+            createParticleExplosion(bulletStartX, bulletStartY, '#ffa500', 5, 4);
+            
+            if (props.type === 'shotgun') {
+                for (let i = 0; i < props.pellets; i++) {
+                    bullets.push({
+                        x: bulletStartX, y: bulletStartY,
+                        dx: (props.speed * player.direction) + (Math.random() - 0.5) * 2,
+                        dy: (Math.random() - 0.5) * 4,
+                        radius: 2, life: 40, type: 'normal', color: props.color,
+                        weapon: toolName
+                    });
+                }
+            } else {
+                let bulletDY = 0;
+                if (props.type === 'grenade') {
+                    bulletDY = -6;
+                }
+                bullets.push({
+                    x: bulletStartX, y: bulletStartY,
+                    dx: props.speed * player.direction, dy: bulletDY,
+                    radius: props.radius, life: 100, type: props.type, color: props.color,
+                    weapon: toolName
+                });
+            }
+            lastUseTime = now;
+            updateHUD();
+        }
+
+        function handleReload() {
+            const toolName = tools[currentToolIndex];
+            if (!toolName || toolName === 'Greifhaken' || isReloading) return;
+            const props = weaponData[toolName];
+            const ammoNeeded = props.clipSize - ammo[toolName].clip;
+            const ammoAvailable = ammo[toolName].reserve;
+
+            if (ammoAvailable > 0 && ammoNeeded > 0) {
+                isReloading = true;
+                stats.reloads++;
+                ammoDisplay.textContent += " Nachladen...";
+                setTimeout(() => {
+                    const ammoToMove = Math.min(ammoNeeded, ammoAvailable);
+                    ammo[toolName].clip += ammoToMove;
+                    ammo[toolName].reserve -= ammoToMove;
+                    isReloading = false;
+                    updateHUD();
+                }, props.reloadTime);
+            }
+        }
+
+        // ======== PROJEKTIL-LOGIK ========
+        function updateBullets(bulletArray, isPlayerBullet) {
+            for (let i = bulletArray.length - 1; i >= 0; i--) {
+                const bullet = bulletArray[i];
+                bullet.x += bullet.dx;
+                if (bullet.type === 'grenade') {
+                    bullet.dy += gravity * 0.5;
+                }
+                bullet.y += bullet.dy;
+
+                if (bullet.x < cameraX - 20 || bullet.x > cameraX + canvas.width + 20) {
+                    bulletArray.splice(i, 1);
+                    continue;
+                }
+
+                let hitWall = false;
+                for (const platform of platforms) {
+                    if (bullet.x > platform.x && bullet.x < platform.x + platform.width &&
+                        bullet.y > platform.y && bullet.y < platform.y + platform.height) {
+                        hitWall = true;
+                        break;
+                    }
+                }
+                if (hitWall) {
+                    createParticleExplosion(bullet.x, bullet.y, '#ccc', 5, 2);
+                    if (isPlayerBullet && (bullet.type === 'rocket' || bullet.type === 'grenade')) {
+                        createExplosion(bullet.x, bullet.y, bullet.type === 'grenade' ? 80 : 120, bullet.weapon);
+                    }
+                    bulletArray.splice(i, 1);
+                    continue;
+                }
+            }
+        }
+        
+        function createExplosion(x, y, radius, weapon) {
+            createParticleExplosion(x, y, '#ff6347', 50, 8);
+            screenShake = { duration: 10, intensity: 5 };
+            let enemiesHit = 0;
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                const dist = Math.sqrt(Math.pow(enemy.x - x, 2) + Math.pow(enemy.y - y, 2));
+                if (dist < radius) {
+                    enemies.splice(i, 1);
+                    const droppedMoney = Math.floor(Math.random() * 10) + 5;
+                    money += droppedMoney;
+                    stats.moneyCollectedThisRun += droppedMoney;
+                    stats.enemiesKilled++;
+                    stats.killsPerWeapon[weapon]++;
+                    enemiesHit++;
+                    createParticleExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 15, 5);
+                    updateHUD();
+                }
+            }
+            if (enemiesHit >= 3) unlockAchievement('multiKill');
+            if (enemiesHit >= 5) unlockAchievement('chainReaction');
+        }
+
+        // ======== GREIFHAKEN ========
+        function fireGrapple(targetX, targetY) {
+            if (grapple.active) return;
+            grapple.active = true; grapple.hooked = false;
+            grapple.x = player.x + player.width / 2; grapple.y = player.y + player.height / 2;
+            const angle = Math.atan2(targetY - grapple.y, targetX - grapple.x);
+            grapple.targetX = grapple.x + Math.cos(angle) * grapple.maxLength;
+            grapple.targetY = grapple.y + Math.sin(angle) * grapple.maxLength;
+        }
+        function updateGrapple() {
+            if (!grapple.active) return;
+
+            if (grapple.hooked) {
+                const dist = Math.sqrt(Math.pow(grapple.hookedTo.x - (player.x + player.width/2), 2) + Math.pow(grapple.hookedTo.y - (player.y + player.height/2), 2));
+                if (dist > grapple.maxLength + 20) releaseGrapple();
+                return;
+            }
+
+            const angle = Math.atan2(grapple.targetY - (player.y + player.height/2), grapple.targetX - (player.x + player.width/2));
+            grapple.x += Math.cos(angle) * grapple.speed; grapple.y += Math.sin(angle) * grapple.speed;
+            for (const platform of platforms) {
+                if (grapple.x > platform.x && grapple.x < platform.x + platform.width &&
+                    grapple.y > platform.y && grapple.y < platform.y + platform.height) {
+                    grapple.hooked = true; grapple.hookedTo = {x: grapple.x, y: grapple.y};
+                    player.dy = 0; return;
+                }
+            }
+            const dist = Math.sqrt(Math.pow(grapple.x - (player.x + player.width / 2), 2) + Math.pow(grapple.y - (player.y + player.height / 2), 2));
+            if (dist >= grapple.maxLength) releaseGrapple();
+        }
+        function handleGrapplePhysics() {
+            const hookPoint = grapple.hookedTo;
+            const playerCenter = { x: player.x + player.width / 2, y: player.y + player.height / 2 };
+            const dx = hookPoint.x - playerCenter.x; 
+            const dy = hookPoint.y - playerCenter.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            const pullForce = 0.8;
+            player.dx += (dx / dist) * pullForce;
+            player.dy += (dy / dist) * pullForce;
+
+            player.dx *= 0.98;
+            player.dy *= 0.98;
+        }
+        function releaseGrapple() { grapple.active = false; grapple.hooked = false; }
+        function drawGrapple() {
+            if (!grapple.active) return;
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width / 2, player.y + player.height / 2);
+            ctx.lineTo(grapple.hooked ? grapple.hookedTo.x : grapple.x, grapple.hooked ? grapple.hookedTo.y : grapple.y);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#fff';
+            ctx.fillRect((grapple.hooked ? grapple.hookedTo.x : grapple.x) - 4, (grapple.hooked ? grapple.hookedTo.y : grapple.y) - 4, 8, 8);
+        }
+
+        // ======== KOLLISIONEN ========
+        function checkCollisions() {
+            for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+                for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
+                    const bullet = bullets[bIndex];
+                    const enemy = enemies[eIndex];
+                    if (bullet && enemy && bullet.x > enemy.x && bullet.x < enemy.x + enemy.width &&
+                        bullet.y > enemy.y && bullet.y < enemy.y + enemy.height) {
+                        if (bullet.type === 'rocket' || bullet.type === 'grenade') {
+                             createExplosion(bullet.x, bullet.y, bullet.type === 'grenade' ? 80 : 120, bullet.weapon);
+                        } else {
+                            enemies.splice(eIndex, 1);
+                            const droppedMoney = Math.floor(Math.random() * 10) + 5;
+                            money += droppedMoney;
+                            stats.moneyCollectedThisRun += droppedMoney;
+                            stats.enemiesKilled++;
+                            stats.killsPerWeapon[bullet.weapon]++;
+                            stats.distanceWithoutKills = 0;
+                            createParticleExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.color, 15, 5);
+                            updateHUD();
+                        }
+                        bullets.splice(bIndex, 1);
+                        break; 
+                    }
+                }
+            }
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                if (bullet.x > player.x && bullet.x < player.x + player.width &&
+                    bullet.y > player.y && bullet.y < player.y + player.height) {
+                    enemyBullets.splice(i, 1);
+                    playerDamaged();
+                    break;
+                }
+            }
+            enemies.forEach(enemy => {
+                if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
+                    playerDamaged();
+                }
+            });
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const c = collectibles[i];
+                if (player.x < c.x + c.width && player.x + player.width > c.x &&
+                    player.y < c.y + c.height && player.y + player.height > c.y) {
+                    money += c.value;
+                    stats.moneyCollectedThisRun += c.value;
+                    createParticleExplosion(c.x + c.width / 2, c.y + c.height / 2, '#2e8b57', 20, 4);
+                    collectibles.splice(i, 1);
+                    updateHUD();
+                }
+            }
+            for (let i = activePowerUps.length - 1; i >= 0; i--) {
+                const p = activePowerUps[i];
+                if (player.x < p.x + p.width && player.x + player.width > p.x &&
+                    player.y < p.y + p.height && player.y + player.height > p.y) {
+                    applyPowerUp(p.type);
+                    activePowerUps.splice(i, 1);
+                }
+            }
+        }
+
+        // ======== PARTIKELSYSTEM ========
+        function createParticleExplosion(x, y, color, count, speed = 8) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    dx: (Math.random() - 0.5) * speed, dy: (Math.random() - 0.5) * speed,
+                    life: 1, size: Math.random() * 3 + 2, color: color
+                });
+            }
+        }
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.dx; p.y += p.dy; p.life -= 0.03;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        // ======== POWER-UPS ========
+        function hitPowerUpBlock(block) {
+            if (block.hit) return;
+            block.hit = true;
+
+            if (block.content === 'money') {
+                const amount = 25;
+                money += amount;
+                stats.moneyCollectedThisRun += amount;
+                createParticleExplosion(block.x + block.width / 2, block.y, '#ffd700', 10, 4);
+                updateHUD();
+            } else if (block.content === 'ammo') {
+                const toolName = tools[currentToolIndex];
+                if (toolName !== 'Greifhaken') {
+                    let amount = 10;
+                    if (toolName === 'Raketenwerfer' || toolName === 'Granatwerfer') amount = 2;
+                    else if (toolName === 'Laser') amount = 20;
+                    ammo[toolName].reserve += amount;
+                    powerUpDisplayMessages.push({ text: `+${amount} Munition`, duration: 120 });
+                    createParticleExplosion(block.x + block.width / 2, block.y, '#cccccc', 10, 4);
+                    updateHUD();
+                }
+            } else {
+                activePowerUps.push({
+                    x: block.x,
+                    y: block.y - 5,
+                    width: 24,
+                    height: 24,
+                    dx: 0,
+                    dy: -3,
+                    type: block.content,
+                    onGround: false,
+                });
+            }
+        }
+
+        function applyPowerUp(type) {
+            const duration = 600; // 10 seconds at 60fps
+            switch(type) {
+                case 'extraLife':
+                    if (lives < 5) lives++;
+                    powerUpDisplayMessages.push({ text: '+1 Leben', duration: 120 });
+                    updateHUD();
+                    break;
+                case 'speedBoost':
+                    player.speedBoostTimer = duration;
+                    powerUpDisplayMessages.push({ text: 'Speed Boost', duration: duration });
+                    break;
+                case 'invincibility':
+                    player.invincibilityTimer = duration;
+                    powerUpDisplayMessages.push({ text: 'Unverwundbar', duration: duration });
+                    break;
+                case 'rapidFire':
+                    player.rapidFireTimer = duration;
+                    powerUpDisplayMessages.push({ text: 'Schnellfeuer', duration: duration });
+                    break;
+                case 'magnet':
+                    player.magnetTimer = duration;
+                    powerUpDisplayMessages.push({ text: 'Münzmagnet', duration: duration });
+                    break;
+            }
+        }
+
+        function updatePowerUps() {
+            if (player.speedBoostTimer > 0) player.speedBoostTimer--;
+            if (player.invincibilityTimer > 0) player.invincibilityTimer--;
+            if (player.rapidFireTimer > 0) player.rapidFireTimer--;
+            if (player.magnetTimer > 0) player.magnetTimer--;
+
+            for (let i = activePowerUps.length - 1; i >= 0; i--) {
+                const p = activePowerUps[i];
+                if (!p.onGround) {
+                    p.dy += gravity * 0.5;
+                    p.y += p.dy;
+
+                    platforms.forEach(platform => {
+                        if (p.x < platform.x + platform.width && p.x + p.width > platform.x &&
+                            p.y + p.height > platform.y && p.y < platform.y + platform.height && p.dy > 0) {
+                            p.y = platform.y - p.height;
+                            p.dy = 0;
+                            p.onGround = true;
+                        }
+                    });
+                }
+            }
+
+            if (player.magnetTimer > 0) {
+                collectibles.forEach(c => {
+                    const dx = (player.x + player.width / 2) - (c.x + c.width / 2);
+                    const dy = (player.y + player.height / 2) - (c.y + c.height / 2);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        c.x += dx / dist * 5;
+                        c.y += dy / dist * 5;
+                    }
+                });
+            }
+        }
+
+        function updatePowerUpDisplay() {
+            powerUpDisplay.innerHTML = '';
+            for (let i = powerUpDisplayMessages.length - 1; i >= 0; i--) {
+                const msg = powerUpDisplayMessages[i];
+                msg.duration--;
+                if (msg.duration <= 0) {
+                    powerUpDisplayMessages.splice(i, 1);
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'powerup-text';
+                    const seconds = Math.ceil(msg.duration / 60);
+                    span.textContent = msg.duration > 120 ? `${msg.text}: ${seconds}s` : msg.text;
+                    powerUpDisplay.appendChild(span);
+                }
+            }
+        }
+
+        function drawPowerUpBlock(block) {
+            ctx.fillStyle = block.hit ? '#a52a2a' : '#d2691e';
+            ctx.fillRect(block.x, block.y, block.width, block.height);
+            if (!block.hit) {
+                ctx.fillStyle = 'white';
+                ctx.font = '24px "Press Start 2P"';
+                ctx.fillText("?", block.x + 8, block.y + 26);
+            }
+        }
+
+        function drawActivePowerUp(p) {
+            let color = '#fff';
+            let text = '?';
+            switch(p.type) {
+                case 'extraLife': color = '#ff4da6'; text = '❤️'; break;
+                case 'speedBoost': color = '#4dffff'; text = 'S'; break;
+                case 'invincibility': color = '#ffff4d'; text = 'I'; break;
+                case 'rapidFire': color = '#ff8c1a'; text = 'F'; break;
+                case 'magnet': color = '#70db70'; text = 'M'; break;
+            }
+            ctx.fillStyle = color;
+            ctx.fillRect(p.x, p.y, p.width, p.height);
+            ctx.fillStyle = 'black';
+            ctx.font = '16px "Press Start 2P"';
+            ctx.fillText(text, p.x + 6, p.y + 18);
+        }
+
+        // ======== SPIELERSTATUS ========
+        let lastDamageTime = 0;
+        function playerDamaged() {
+            if (player.invincibilityTimer > 0) return;
+
+            const now = Date.now();
+            if (now - lastDamageTime < 1000) return;
+            lastDamageTime = now;
+            
+            lives--;
+            stats.distanceWithoutDamage = 0;
+            if (lives === 1) unlockAchievement('closeCall');
+
+            screenShake = { duration: 15, intensity: 8 };
+            createParticleExplosion(player.x + player.width / 2, player.y + player.height / 2, player.color, 30, 8);
+            updateHUD();
+            if (lives <= 0) {
+                gameOver();
+            }
+        }
+
+        function playerFell() {
+             lives = 0;
+             gameOver();
+        }
+
+        function gameOver() {
+            gameState = 'gameOver';
+            mainMenu.style.display = 'flex';
+            gameWrapper.style.display = 'none';
+        }
+
+        // ======== HUD & UI ========
+        function updateHUD() {
+            toolDisplay.textContent = `${tools[currentToolIndex]}`;
+            moneyDisplay.textContent = `Geld: ${money}$`;
+            livesHearts.innerHTML = '❤️'.repeat(lives);
+            
+            stats.highestMoney = Math.max(stats.highestMoney, money);
+            
+            const toolName = tools[currentToolIndex];
+            if (toolName !== 'Greifhaken' && ammo[toolName]) {
+                ammoDisplay.textContent = `${ammo[toolName].clip} / ${ammo[toolName].reserve}`;
+                if (ammo[toolName].clip === 0 && ammo[toolName].reserve === 0) {
+                    unlockAchievement('ammoSpender');
+                }
+            } else {
+                ammoDisplay.textContent = '---';
+            }
+        }
+        
+        // ======== SHOP-LOGIK ========
+        function openShop() {
+            if (shopElement.style.display === 'flex') return;
+            gameStateBeforeShop = gameState;
+            if (gameState === 'playing') {
+                gameState = 'paused';
+            }
+            shopElement.style.display = 'flex';
+            updateShopButtons();
+        }
+
+        function closeShop() {
+            shopElement.style.display = 'none';
+            gameState = gameStateBeforeShop;
+        }
+
+        function toggleShop() {
+            const isShopOpen = shopElement.style.display === 'flex';
+            if (isShopOpen) {
+                closeShop();
+            } else {
+                if (gameState === 'menu' || (gameState === 'playing' && player.onGround)) {
+                    openShop();
+                }
+            }
+        }
+
+        function updateShopButtons() {
+            document.querySelectorAll('#waffen-tab button').forEach(button => {
+                const weaponName = button.dataset.weapon;
+                if (tools.includes(weaponName)) {
+                    button.disabled = true;
+                    button.textContent = "Gekauft";
+                } else {
+                    button.disabled = money < weaponData[weaponName].price;
+                    button.textContent = "Kaufen";
+                }
+            });
+
+            document.querySelectorAll('#munition-tab button').forEach(button => {
+                const weaponName = button.dataset.weapon;
+                const item = ammoShopData.find(d => d.weapon === weaponName);
+                if (item) {
+                     button.disabled = !tools.includes(weaponName) || money < item.cost;
+                }
+            });
+        }
+
+        function buyWeapon(weaponName, button) {
+            const weapon = weaponData[weaponName];
+            if (money >= weapon.price && !tools.includes(weaponName)) {
+                money -= weapon.price;
+                tools.push(weaponName);
+                initAmmoForWeapon(weaponName);
+                stats.itemsBought++;
+                if (stats.itemsBought === 1) unlockAchievement('firstPurchase');
+                unlockAchievement('collector');
+                updateHUD();
+                updateShopButtons();
+            }
+        }
+        function buyAmmo(weaponName, amount, cost) {
+            if (money >= cost && tools.includes(weaponName)) {
+                money -= cost;
+                ammo[weaponName].reserve += amount;
+                stats.itemsBought++;
+                if (stats.itemsBought === 1) unlockAchievement('firstPurchase');
+                updateHUD();
+                updateShopButtons();
+            }
+        }
+
+        // ======== WERKZEUGRAD ========
+        function showToolWheel() {
+            if (gameState !== 'playing') return;
+            gameState = 'paused';
+            toolWheel.style.display = 'block';
+            toolWheel.innerHTML = '';
+
+            const angleStep = (Math.PI * 2) / tools.length;
+            const radius = 90;
+
+            tools.forEach((tool, index) => {
+                const angle = index * angleStep - Math.PI / 2;
+                const slot = document.createElement('div');
+                slot.className = 'tool-slot';
+                if (index === currentToolIndex) {
+                    slot.classList.add('selected');
+                }
+                slot.textContent = tool;
+                slot.dataset.index = index;
+                slot.style.left = `${125 + radius * Math.cos(angle) - 40}px`;
+                slot.style.top = `${125 + radius * Math.sin(angle) - 40}px`;
+                toolWheel.appendChild(slot);
+            });
+        }
+
+        function hideToolWheel(selectTool = false) {
+            if (toolWheel.style.display !== 'block') return;
+            
+            if (selectTool) {
+                const selectedSlot = toolWheel.querySelector('.tool-slot.selected');
+                if (selectedSlot) {
+                    const newIndex = parseInt(selectedSlot.dataset.index, 10);
+                    if (!isNaN(newIndex)) {
+                        currentToolIndex = newIndex;
+                        updateHUD();
+                    }
+                }
+            }
+            
+            toolWheel.style.display = 'none';
+            if (gameState === 'paused') {
+                gameState = 'playing';
+            }
+        }
+
+        function updateToolWheelSelection() {
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            const dx = mouse.x - centerX;
+            const dy = mouse.y - centerY;
+            
+            let angle = Math.atan2(dy, dx); // Angle in radians
+            
+            angle += Math.PI / 2; 
+            if (angle < 0) {
+                angle += Math.PI * 2;
+            }
+
+            const totalTools = tools.length;
+            if (totalTools === 0) return;
+
+            const sliceAngle = (Math.PI * 2) / totalTools;
+            const selectedIndex = Math.floor(angle / sliceAngle);
+
+            const slots = toolWheel.querySelectorAll('.tool-slot');
+            slots.forEach((slot, index) => {
+                slot.classList.toggle('selected', index === selectedIndex);
+            });
+        }
+
+        // ======== ERFOLGE & STATISTIKEN ========
+        function initStats(fullReset = true) {
+            if (fullReset) {
+                stats = {
+                    enemiesKilled: 0, shotsFired: 0, moneyCollectedThisRun: 0, highestMoney: 0,
+                    jumps: 0, distanceTraveled: 0, grappleUses: 0, reloads: 0,
+                    ticksSurvived: 0, ticksClimbing: 0, itemsBought: 0,
+                    distanceWithoutDamage: 0, distanceWithoutKills: 0,
+                    killsPerWeapon: { 'Pistole': 0, 'Schrotflinte': 0, 'Maschinengewehr': 0, 'Raketenwerfer': 0, 'Laser': 0, 'Granatwerfer': 0 },
+                    shotsPerWeapon: { 'Pistole': 0, 'Schrotflinte': 0, 'Maschinengewehr': 0, 'Raketenwerfer': 0, 'Laser': 0, 'Granatwerfer': 0 },
+                };
+            }
+            stats.enemiesKilled = 0;
+            stats.moneyCollectedThisRun = 0;
+            stats.ticksSurvived = 0;
+            stats.distanceWithoutDamage = 0;
+            stats.distanceWithoutKills = 0;
+        }
+
+        function initAchievements() {
+            if (achievements.length > 0) return;
+            
+            achievements = [
+                { id: 'firstKill', name: 'Erster Abschuss', desc: 'Besiege deinen ersten Gegner.', unlocked: false, condition: () => stats.enemiesKilled >= 1, reward: {type: 'money', value: 10} },
+                { id: 'rich', name: 'Reicher Abenteurer', desc: 'Sammle 500$ in einer Runde.', unlocked: false, condition: () => stats.moneyCollectedThisRun >= 500, reward: {type: 'money', value: 75} },
+                { id: 'slayer', name: 'Meisterschütze', desc: 'Besiege 25 Gegner in einer Runde.', unlocked: false, condition: () => stats.enemiesKilled >= 25, reward: {type: 'money', value: 50} },
+                { id: 'collector', name: 'Waffensammler', desc: 'Besitze 3 verschiedene Waffen.', unlocked: false, condition: () => tools.length >= 4, reward: {type: 'money', value: 75} },
+                { id: 'multiKill', name: 'Multi-Kill!', desc: 'Besiege 3 Gegner mit einer Explosion.', unlocked: false, condition: () => false, reward: {type: 'money', value: 50} },
+                { id: 'moneybags', name: 'Geldbeutel', desc: 'Halte 500$ auf einmal.', unlocked: false, condition: () => stats.highestMoney >= 500, reward: {type: 'money', value: 75} },
+                { id: 'explorer', name: 'Entdecker', desc: 'Lege eine Distanz von 2000m zurück.', unlocked: false, condition: () => player.x >= 2000, reward: {type: 'money', value: 50} },
+                { id: 'terminator', name: 'Terminator', desc: 'Besiege 50 Gegner in einer Runde.', unlocked: false, condition: () => stats.enemiesKilled >= 50, reward: {type: 'money', value: 100} },
+                { id: 'jumper', name: 'Springer', desc: 'Springe 100 Mal.', unlocked: false, condition: () => stats.jumps >= 100, reward: {type: 'money', value: 15} },
+                { id: 'marathon', name: 'Marathonläufer', desc: 'Lege insgesamt 5000m zurück.', unlocked: false, condition: () => stats.distanceTraveled >= 5000, reward: {type: 'money', value: 75} },
+                { id: 'acrobat', name: 'Akrobat', desc: 'Benutze den Greifhaken 50 Mal.', unlocked: false, condition: () => stats.grappleUses >= 50, reward: {type: 'money', value: 50} },
+                { id: 'arsenal', name: 'Waffenkammer', desc: 'Besitze alle Waffen.', unlocked: false, condition: () => tools.length >= 7, reward: {type: 'money', value: 100} },
+                { id: 'triggerHappy', name: 'Schießwütig', desc: 'Feuere 500 Schüsse ab.', unlocked: false, condition: () => stats.shotsFired >= 500, reward: {type: 'money', value: 25} },
+                { id: 'reloadKing', name: 'Nachladekönig', desc: 'Lade 50 Mal nach.', unlocked: false, condition: () => stats.reloads >= 50, reward: {type: 'money', value: 25} },
+                { id: 'survivor', name: 'Überlebenskünstler', desc: 'Überlebe für 5 Minuten.', unlocked: false, condition: () => stats.ticksSurvived >= 18000, reward: {type: 'money', value: 100} },
+                { id: 'untouchable', name: 'Unberührbar', desc: 'Lege 500m ohne Schaden zurück.', unlocked: false, condition: () => stats.distanceWithoutDamage >= 500, reward: {type: 'money', value: 100} },
+                { id: 'closeCall', name: 'Knappe Sache', desc: 'Überlebe mit nur noch einem Leben.', unlocked: false, condition: () => false, reward: {type: 'money', value: 25} },
+                { id: 'pacifist', name: 'Pazifist', desc: 'Lege 300m zurück, ohne zu töten.', unlocked: false, condition: () => stats.distanceWithoutKills >= 300, reward: {type: 'money', value: 75} },
+                { id: 'shopper', name: 'Einkäufer', desc: 'Kaufe 10 Gegenstände im Shop.', unlocked: false, condition: () => stats.itemsBought >= 10, reward: {type: 'money', value: 20} },
+                { id: 'hoarder', name: 'Hamsterer', desc: 'Habe über 200 Reservemunition für eine Waffe.', unlocked: false, condition: () => Object.values(ammo).some(a => a.reserve >= 200), reward: {type: 'money', value: 50} },
+                { id: 'firstPurchase', name: 'Erster Kauf', desc: 'Kaufe deinen ersten Gegenstand.', unlocked: false, condition: () => false, reward: {type: 'money', value: 10} },
+                { id: 'ammoSpender', name: 'Munitionsverschwender', desc: 'Verbrauche die gesamte Munition einer Waffe.', unlocked: false, condition: () => false, reward: {type: 'money', value: 20} },
+                { id: 'chainReaction', name: 'Kettenreaktion', desc: 'Besiege 5 Gegner mit einer Explosion.', unlocked: false, condition: () => false, reward: {type: 'money', value: 100} },
+                { id: 'freefall', name: 'Freier Fall', desc: 'Falle 3 Sekunden lang und überlebe.', unlocked: false, condition: () => false, reward: {type: 'money', value: 20} },
+                { id: 'wallRunner', name: 'Wandläufer', desc: 'Verbringe 30 Sekunden an Wänden.', unlocked: false, condition: () => stats.ticksClimbing >= 1800, reward: {type: 'money', value: 25} },
+                { id: 'pistolPro', name: 'Pistolen-Profi', desc: 'Erziele 25 Kills mit der Pistole.', unlocked: false, condition: () => stats.killsPerWeapon['Pistole'] >= 25, reward: {type: 'money', value: 25} },
+                { id: 'mgMaster', name: 'MG-Meister', desc: 'Erziele 25 Kills mit dem MG.', unlocked: false, condition: () => stats.killsPerWeapon['Maschinengewehr'] >= 25, reward: {type: 'money', value: 40} },
+                { id: 'rocketGod', name: 'Raketengott', desc: 'Erziele 25 Kills mit dem Raketenwerfer.', unlocked: false, condition: () => stats.killsPerWeapon['Raketenwerfer'] >= 25, reward: {type: 'money', value: 60} },
+                { id: 'laserExpert', name: 'Laserexperte', desc: 'Erziele 25 Kills mit dem Laser.', unlocked: false, condition: () => stats.killsPerWeapon['Laser'] >= 25, reward: {type: 'money', value: 75} },
+                { id: 'grandSlam', name: 'Grand Slam', desc: 'Schalte alle anderen Erfolge frei.', unlocked: false, condition: () => achievements.filter(a => a.id !== 'grandSlam').every(a => a.unlocked), reward: {type: 'money', value: 100} },
+            ];
+        }
+
+        function checkAchievements() {
+            achievements.forEach(ach => {
+                if (!ach.unlocked && ach.condition()) {
+                    unlockAchievement(ach.id);
+                }
+            });
+        }
+
+        function unlockAchievement(id) {
+            const ach = achievements.find(a => a.id === id);
+            if (ach && !ach.unlocked) {
+                ach.unlocked = true;
+                let rewardText = '';
+                if (ach.reward) {
+                    if (ach.reward.type === 'money') {
+                        money += ach.reward.value;
+                        rewardText = ` (+${ach.reward.value}$)`;
+                        updateHUD();
+                    }
+                }
+                showAchievementNotification(`${ach.name}${rewardText}`);
+                updateAchievementProgress();
+                checkAchievements();
+            }
+        }
+
+        function showAchievementNotification(text) {
+            achievementNotification.innerHTML = `Erfolg!<br>${text}`;
+            achievementNotification.style.top = '35px';
+            setTimeout(() => {
+                achievementNotification.style.top = '-100px';
+            }, 4000);
+        }
+
+        function updateAchievementProgress() {
+            const unlockedCount = achievements.filter(a => a.unlocked).length;
+            achievementProgress.textContent = `Erfolge: ${unlockedCount} / ${achievements.length}`;
+        }
+
+        function populateAchievementsScreen() {
+            achievementsList.innerHTML = '';
+            achievements.forEach(ach => {
+                const item = document.createElement('div');
+                item.className = `achievement-item ${ach.unlocked ? '✔️' : '🔒'}`;
+                let rewardHtml = '';
+                if(ach.reward && ach.reward.type === 'money') {
+                    rewardHtml = `<div class="achievement-reward">Belohnung: ${ach.reward.value}$</div>`;
+                }
+                item.innerHTML = `<h3>${ach.name} ${ach.unlocked ? '✔️' : ' '}</h3><p>${ach.desc}</p>${rewardHtml}`;
+                achievementsList.appendChild(item);
+            });
+        }
+
+        // ======== MUNITION INITIALISIERUNG ========
+        function initAmmo() {
+            tools.forEach(toolName => initAmmoForWeapon(toolName));
+        }
+
+        function initAmmoForWeapon(toolName) {
+             if (toolName !== 'Greifhaken' && !ammo[toolName]) {
+                const props = weaponData[toolName];
+                ammo[toolName] = {
+                    clip: props.clipSize,
+                    reserve: props.clipSize * 3
+                };
+            }
+        }
+
+        // --- EVENT LISTENERS ---
+        window.addEventListener('keydown', e => {
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                toggleShop();
+            }
+            if (e.key.toLowerCase() === 'q') {
+                e.preventDefault();
+                showToolWheel();
+            }
+
+            if (gameState === 'paused' && toolWheel.style.display === 'block' && e.key.toLowerCase() === 'd') {
+                const slots = Array.from(toolWheel.children);
+                if (slots.length === 0) return;
+
+                let currentIndex = -1;
+                
+                slots.forEach((slot, index) => {
+                    if (slot.classList.contains('selected')) {
+                        currentIndex = index;
+                    }
+                });
+
+                const nextIndex = (currentIndex + 1) % slots.length;
+
+                slots.forEach((slot, index) => {
+                    slot.classList.toggle('selected', index === nextIndex);
+                });
+            }
+
+            if (gameState !== 'playing') return;
+
+            if (e.key.toLowerCase() === 'a' || e.key === 'ArrowLeft') keys.a = true;
+            if (e.key.toLowerCase() === 'd' || e.key === 'ArrowRight') keys.d = true;
+            if (e.key.toLowerCase() === 'w' || e.key === ' ') keys.w = true;
+            if (e.key.toLowerCase() === 'r') handleReload();
+        });
+        window.addEventListener('keyup', e => {
+            if (e.key.toLowerCase() === 'q') {
+                keys.q = false;
+                hideToolWheel(true);
+            }
+            if (e.key.toLowerCase() === 'a' || e.key === 'ArrowLeft') keys.a = false;
+            if (e.key.toLowerCase() === 'd' || e.key === 'ArrowRight') keys.d = false;
+            if (e.key.toLowerCase() === 'w' || e.key === ' ') keys.w = false;
+        });
+        canvas.addEventListener('mousedown', e => {
+            if (gameState !== 'playing') return;
+            if (e.button === 0) mouse.down = true;
+        });
+        canvas.addEventListener('mouseup', e => {
+            if (e.button === 0) mouse.down = false;
+        });
+        window.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            if (toolWheel.style.display === 'block') {
+                updateToolWheelSelection();
+            }
+        });
+        
+        // --- MENU BUTTONS ---
+        startButton.addEventListener('click', () => {
+            mainMenu.style.display = 'none';
+            gameWrapper.style.display = 'block';
+            resetGame(); 
+            gameState = 'playing'; 
+        });
+        instructionsButton.addEventListener('click', () => {
+            mainMenu.style.display = 'none';
+            instructionsScreen.style.display = 'flex';
+        });
+        backButton.addEventListener('click', () => {
+            instructionsScreen.style.display = 'none';
+            mainMenu.style.display = 'flex';
+        });
+        achievementsButton.addEventListener('click', () => {
+            populateAchievementsScreen();
+            mainMenu.style.display = 'none';
+            achievementsScreen.style.display = 'flex';
+        });
+        achievementsBackButton.addEventListener('click', () => {
+            achievementsScreen.style.display = 'none';
+            mainMenu.style.display = 'flex';
+        });
+        homeButton.addEventListener('click', () => {
+            gameState = 'menu';
+            gameWrapper.style.display = 'none';
+            mainMenu.style.display = 'flex';
+        });
+        settingsButton.addEventListener('click', () => {
+            mainMenu.style.display = 'none';
+            settingsScreen.style.display = 'flex';
+        });
+        settingsBackButton.addEventListener('click', () => {
+            settingsScreen.style.display = 'none';
+            mainMenu.style.display = 'flex';
+        });
+        shopButtonMenu.addEventListener('click', openShop);
+        shopBackButton.addEventListener('click', closeShop);
+
+        document.getElementById('waffen-tab-btn').addEventListener('click', () => {
+            document.getElementById('waffen-tab').style.display = 'block';
+            document.getElementById('munition-tab').style.display = 'none';
+            document.getElementById('waffen-tab-btn').classList.add('active');
+            document.getElementById('munition-tab-btn').classList.remove('active');
+        });
+        document.getElementById('munition-tab-btn').addEventListener('click', () => {
+            document.getElementById('waffen-tab').style.display = 'none';
+            document.getElementById('munition-tab').style.display = 'block';
+            document.getElementById('waffen-tab-btn').classList.remove('active');
+            document.getElementById('munition-tab-btn').classList.add('active');
+        });
+
+        // --- MOBILE STEUERUNG LOGIK ---
+        function switchWeapon() {
+            if (tools.length > 1) {
+                currentToolIndex = (currentToolIndex + 1) % tools.length;
+                updateHUD();
+            }
+        }
+
+        mobileControlsButton.addEventListener('click', () => {
+            mobileControlsEnabled = !mobileControlsEnabled;
+            mobileControls.style.display = mobileControlsEnabled ? 'flex' : 'none';
+            shopBackButton.style.display = mobileControlsEnabled ? 'block' : 'none';
+            mobileControlsButton.textContent = `Mobile Steuerung: ${mobileControlsEnabled ? 'An' : 'Aus'}`;
+        });
+
+        document.querySelector('.button-size-controls').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const newSize = e.target.dataset.size;
+                setButtonSize(newSize);
+            }
+        });
+
+        function setButtonSize(size) {
+            const sizePx = `${size}px`;
+            document.querySelectorAll('.action-button').forEach(btn => {
+                btn.style.width = sizePx;
+                btn.style.height = sizePx;
+            });
+            const joystickSize = size * 1.8;
+            joystickContainer.style.width = `${joystickSize}px`;
+            joystickContainer.style.height = `${joystickSize}px`;
+            joystickKnob.style.width = `${joystickSize / 2}px`;
+            joystickKnob.style.height = `${joystickSize / 2}px`;
+        }
+
+
+        // Touch Events
+        jumpButton.addEventListener('touchstart', (e) => { e.preventDefault(); keys.w = true; }, { passive: false });
+        jumpButton.addEventListener('touchend', (e) => { e.preventDefault(); keys.w = false; });
+        shootButton.addEventListener('touchstart', (e) => { e.preventDefault(); mouse.down = true; }, { passive: false });
+        shootButton.addEventListener('touchend', (e) => { e.preventDefault(); mouse.down = false; });
+        switchButton.addEventListener('touchstart', (e) => { e.preventDefault(); switchWeapon(); }, { passive: false });
+
+        // Mouse Events for PC
+        jumpButton.addEventListener('mousedown', (e) => { e.preventDefault(); keys.w = true; });
+        jumpButton.addEventListener('mouseup', (e) => { e.preventDefault(); keys.w = false; });
+        shootButton.addEventListener('mousedown', (e) => { e.preventDefault(); mouse.down = true; });
+        shootButton.addEventListener('mouseup', (e) => { e.preventDefault(); mouse.down = false; });
+        switchButton.addEventListener('mousedown', (e) => { e.preventDefault(); switchWeapon(); });
+
+
+        let joystickActive = false;
+        function handleJoystickMove(e) {
+            if (!joystickActive) return;
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = joystickContainer.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const deltaX = touch.clientX - centerX;
+
+            const knobRadius = joystickContainer.offsetWidth / 2 - joystickKnob.offsetWidth / 2;
+            let knobX = touch.clientX - (rect.left + joystickContainer.offsetWidth / 2);
+            knobX = Math.max(-knobRadius, Math.min(knobRadius, knobX));
+            
+            joystickKnob.style.transform = `translate(-50%, -50%) translate(${knobX}px, 0px)`;
+
+
+            if (deltaX < -15) {
+                keys.a = true;
+                keys.d = false;
+            } else if (deltaX > 15) {
+                keys.d = true;
+                keys.a = false;
+            } else {
+                keys.a = false;
+                keys.d = false;
+            }
+        }
+        function endJoystick(e) {
+            joystickActive = false;
+            keys.a = false;
+            keys.d = false;
+            joystickKnob.style.transform = 'translate(-50%, -50%)';
+        }
+
+        joystickContainer.addEventListener('touchstart', (e) => { e.preventDefault(); joystickActive = true; handleJoystickMove(e); }, { passive: false });
+        joystickContainer.addEventListener('touchmove', (e) => { e.preventDefault(); handleJoystickMove(e); }, { passive: false });
+        joystickContainer.addEventListener('touchend', (e) => { e.preventDefault(); endJoystick(e); });
+        
+        joystickContainer.addEventListener('mousedown', (e) => { e.preventDefault(); joystickActive = true; handleJoystickMove(e); }, { passive: false });
+        window.addEventListener('mousemove', (e) => { if(joystickActive) { e.preventDefault(); handleJoystickMove(e); }}, { passive: false });
+        window.addEventListener('mouseup', (e) => { if(joystickActive) { e.preventDefault(); endJoystick(e); }});
+
+
+        // --- CANVAS GRÖSSE & GERÄTE-SIMULATION ---
+        function setDeviceMode(device) {
+            gameWrapper.style.width = '';
+            gameWrapper.style.height = '';
+            gameWrapper.style.border = '';
+            gameWrapper.style.aspectRatio = '';
+            gameWrapper.style.maxWidth = '';
+            gameWrapper.style.maxHeight = '';
+
+            switch(device) {
+                case 'handy':
+                    gameWrapper.style.aspectRatio = '19.5 / 9'; // Landscape
+                    gameWrapper.style.width = '90vw';
+                    gameWrapper.style.height = 'auto';
+                    gameWrapper.style.border = '4px solid #3c4c7c';
+                    if (!mobileControlsEnabled) { mobileControlsButton.click(); }
+                    break;
+                case 'ipad':
+                    gameWrapper.style.aspectRatio = '4 / 3';
+                    gameWrapper.style.height = '90vh';
+                    gameWrapper.style.width = 'auto';
+                    gameWrapper.style.border = '4px solid #3c4c7c';
+                     if (!mobileControlsEnabled) { mobileControlsButton.click(); }
+                    break;
+                case 'pc':
+                default:
+                    gameWrapper.style.width = '100%';
+                    gameWrapper.style.height = '100%';
+                    break;
+            }
+        }
+
+        deviceControls.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const device = e.target.dataset.device;
+                setDeviceMode(device);
+            }
+        });
+        
+        function resizeCanvas() {
+            canvas.width = 800;
+            canvas.height = 600;
+        }
+        window.addEventListener('resize', () => {
+             // Die resizeCanvas-Funktion wird beibehalten, um die interne Auflösung festzulegen,
+             // aber die Anpassung der Wrapper-Größe erfolgt jetzt über setDeviceMode.
+        }, false);
+        
+        // --- START GAME LOOP ---
+        initializeGame();
+    </script>
+</body>
+</html>
